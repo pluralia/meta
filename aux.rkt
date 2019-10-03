@@ -1,6 +1,7 @@
 #lang racket
 
 (provide (all-defined-out))
+(require "int.rkt")
 (require racket/trace)
 
 
@@ -80,3 +81,6 @@
     (cons (car program)
       (map (lambda (b) (cons (car b) (map (lambda (i) (update-instr i (cadr folded))) (cdr b))  ))
            (caddr folded)))))
+
+(define (pretty-int program data)
+  (pretty (int program data)))
