@@ -1,7 +1,6 @@
 #lang racket
 
 (provide (all-defined-out))
-(require "int.rkt")
 (require racket/trace)
 
 
@@ -12,6 +11,8 @@
 
 (define (qu var)
   (cons 'quote (list var)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (zip-with-acc acc left right)
   (if
@@ -66,8 +67,12 @@
     [`(,num ,used ,blocks)
         (if
           (member (car block) used)
-          `(,num ,used ,(append blocks (list (cons (index-of used (car block)) (cdr block)))))
-          `(,(+ num 1) ,(append used (list (car block))) ,(append blocks (list (cons num (cdr block))))))]))
+          `(,num
+            ,used
+            ,(append blocks (list (cons (index-of used (car block)) (cdr block)))))
+          `(,(+ num 1)
+            ,(append used (list (car block)))
+            ,(append blocks (list (cons num (cdr block))))))]))
 
 (define (update-instr instr ids)
   (match (car instr)
@@ -79,8 +84,5 @@
   (let
     ([folded (foldl add-block `(0 () ()) (cdr program))])
     (cons (car program)
-      (map (lambda (b) (cons (car b) (map (lambda (i) (update-instr i (cadr folded))) (cdr b))  ))
+      (map (lambda (b) (cons (car b) (map (lambda (i) (update-instr i (cadr folded))) (cdr b))))
            (caddr folded)))))
-
-(define (pretty-int program data)
-  (pretty (int program data)))
