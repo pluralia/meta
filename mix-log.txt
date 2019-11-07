@@ -1,0 +1,387 @@
+MIX-CHECK
+`find-name`:
+#t
+'((read valuelist) ((search . #hash((name . y) (namelist . (x y z)))) (valuelist := cdr valuelist) (return car valuelist)))
+`I proj`:
+`source`:
+'((if 0 goto 3) (right) (goto 0) (write 1))
+`target-1`:
+'((read Right)
+  (0 (Left := '()) (if (equal? '0 (car Right)) goto 1 goto 2))
+  (1 (Right := cons '1 (cdr Right)) (return Right))
+  (2 (Left := cons (car Right) Left) (Right := cdr Right) (if (equal? '0 (car Right)) goto 1 goto 2)))
+check `target-1`:
+#t
+`II proj`:
+`proj2/comp`:
+`source`:
+'((if 0 goto 3) (right) (goto 0) (write 1))
+`target-2`:
+'((read Right)
+  (0 (Left := '()) (if (equal? '0 (car Right)) goto 1 goto 2))
+  (1 (Right := cons '1 (cdr Right)) (return Right))
+  (2 (Left := cons (car Right) Left) (Right := cdr Right) (if (equal? '0 (car Right)) goto 1 goto 2)))
+check `target-2`:
+#t
+`III proj`:
+`proj3/cogen`:
+'((read vs0)
+  (0 (Pending := list->set (list (cons 'init (make-immutable-hash vs0)))) (Marked := list->set ()) (Res := '((read vs0))) (if (set-empty? Pending) goto 1 goto 2))
+  (1 (return Res))
+  (2
+   (PPVS := set-first Pending)
+   (PP := car PPVS)
+   (VS := cdr PPVS)
+   (Pending := set-rest Pending)
+   (Marked := set-add Marked PPVS)
+   (BB
+    :=
+    hash-ref
+    '#hash((do-assign . ((if (is-static (first Command) static) goto do-static-assign goto do-dynamic-assign)))
+           (do-dynamic-assign . ((Code := append Code (list (append (list (first Command) ':=) (reduce (cddr Command) VS)))) (goto inner-loop)))
+           (do-dynamic-if
+            .
+            ((Pending := update-pending Pending VS Marked (fourth Command) (sixth Command))
+             (Code
+              :=
+              append
+              Code
+              (list (append (append (list 'if) (list (reduce (second Command) VS))) (list 'goto (env-label (fourth Command) VS) 'goto (env-label (sixth Command) VS)))))
+             (goto inner-loop)))
+           (do-fail . ((return error "MIX: error instruction")))
+           (do-goto . ((BB := hash-ref program (second Command) ()) (goto inner-loop)))
+           (do-if . ((if (is-static (second Command) static) goto do-static-if goto do-dynamic-if)))
+           (do-return . ((Code := append Code (list (append (list 'return) (reduce (cdr Command) VS)))) (goto inner-loop)))
+           (do-static-assign . ((VS := update-vs VS (first Command) (cddr Command)) (goto inner-loop)))
+           (do-static-if . ((if (int-expr (hash->list VS) (second Command)) goto do-static-if-true goto do-static-if-false)))
+           (do-static-if-false . ((BB := hash-ref program (sixth Command) ()) (goto inner-loop)))
+           (do-static-if-true . ((BB := hash-ref program (fourth Command) ()) (goto inner-loop)))
+           (init .
+                 ((Pending := list->set (list (cons (caadr program) (make-immutable-hash vs0))))
+                  (static := car div)
+                  (dynamic := cdr div)
+                  (Marked := list->set ())
+                  (Res := (list (cons 'read (set-subtract (cdar program) static))))
+                  (program := make-immutable-hash (cdr program))
+                  (goto loop)))
+           (inner-loop . ((if (empty? BB) goto loop-end goto inner-loop-body)))
+           (inner-loop-body . ((Command := car BB) (BB := cdr BB) (goto is-assign)))
+           (is-assign . ((if (equal? (second Command) ':=) goto do-assign goto is-goto)))
+           (is-goto . ((if (equal? (car Command) 'goto) goto do-goto goto is-if)))
+           (is-if . ((if (equal? (car Command) 'if) goto do-if goto is-return)))
+           (is-return . ((if (equal? (car Command) 'return) goto do-return goto do-fail)))
+           (loop . ((if (set-empty? Pending) goto stop goto loop-begin)))
+           (loop-begin
+            .
+            ((PPVS := set-first Pending)
+             (PP := car PPVS)
+             (VS := cdr PPVS)
+             (Pending := set-rest Pending)
+             (Marked := set-add Marked PPVS)
+             (BB := hash-ref program PP ())
+             (Code := list (env-label PP VS))
+             (goto inner-loop)))
+           (loop-end . ((Res := append Res (list Code)) (goto loop)))
+           (stop . ((return Res))))
+    PP
+    ())
+   (Code := list (env-label PP VS))
+   (if (empty? BB) goto 6 goto 3))
+  (3 (Command := car BB) (BB := cdr BB) (if (equal? (second Command) ':=) goto 4 goto 7))
+  (4 (if (is-static (first Command) '(program div static dynamic)) goto 5 goto 18))
+  (5 (VS := update-vs VS (first Command) (cddr Command)) (if (empty? BB) goto 6 goto 3))
+  (6 (Res := append Res (list Code)) (if (set-empty? Pending) goto 1 goto 2))
+  (7 (if (equal? (car Command) 'goto) goto 10 goto 8))
+  (8 (if (equal? (car Command) 'if) goto 9 goto 12))
+  (9 (if (is-static (second Command) '(program div static dynamic)) goto 15 goto 11))
+  (10
+   (BB
+    :=
+    hash-ref
+    '#hash((do-assign . ((if (is-static (first Command) static) goto do-static-assign goto do-dynamic-assign)))
+           (do-dynamic-assign . ((Code := append Code (list (append (list (first Command) ':=) (reduce (cddr Command) VS)))) (goto inner-loop)))
+           (do-dynamic-if
+            .
+            ((Pending := update-pending Pending VS Marked (fourth Command) (sixth Command))
+             (Code
+              :=
+              append
+              Code
+              (list (append (append (list 'if) (list (reduce (second Command) VS))) (list 'goto (env-label (fourth Command) VS) 'goto (env-label (sixth Command) VS)))))
+             (goto inner-loop)))
+           (do-fail . ((return error "MIX: error instruction")))
+           (do-goto . ((BB := hash-ref program (second Command) ()) (goto inner-loop)))
+           (do-if . ((if (is-static (second Command) static) goto do-static-if goto do-dynamic-if)))
+           (do-return . ((Code := append Code (list (append (list 'return) (reduce (cdr Command) VS)))) (goto inner-loop)))
+           (do-static-assign . ((VS := update-vs VS (first Command) (cddr Command)) (goto inner-loop)))
+           (do-static-if . ((if (int-expr (hash->list VS) (second Command)) goto do-static-if-true goto do-static-if-false)))
+           (do-static-if-false . ((BB := hash-ref program (sixth Command) ()) (goto inner-loop)))
+           (do-static-if-true . ((BB := hash-ref program (fourth Command) ()) (goto inner-loop)))
+           (init .
+                 ((Pending := list->set (list (cons (caadr program) (make-immutable-hash vs0))))
+                  (static := car div)
+                  (dynamic := cdr div)
+                  (Marked := list->set ())
+                  (Res := (list (cons 'read (set-subtract (cdar program) static))))
+                  (program := make-immutable-hash (cdr program))
+                  (goto loop)))
+           (inner-loop . ((if (empty? BB) goto loop-end goto inner-loop-body)))
+           (inner-loop-body . ((Command := car BB) (BB := cdr BB) (goto is-assign)))
+           (is-assign . ((if (equal? (second Command) ':=) goto do-assign goto is-goto)))
+           (is-goto . ((if (equal? (car Command) 'goto) goto do-goto goto is-if)))
+           (is-if . ((if (equal? (car Command) 'if) goto do-if goto is-return)))
+           (is-return . ((if (equal? (car Command) 'return) goto do-return goto do-fail)))
+           (loop . ((if (set-empty? Pending) goto stop goto loop-begin)))
+           (loop-begin
+            .
+            ((PPVS := set-first Pending)
+             (PP := car PPVS)
+             (VS := cdr PPVS)
+             (Pending := set-rest Pending)
+             (Marked := set-add Marked PPVS)
+             (BB := hash-ref program PP ())
+             (Code := list (env-label PP VS))
+             (goto inner-loop)))
+           (loop-end . ((Res := append Res (list Code)) (goto loop)))
+           (stop . ((return Res))))
+    (second Command)
+    ())
+   (if (empty? BB) goto 6 goto 3))
+  (11
+   (Pending := update-pending Pending VS Marked (fourth Command) (sixth Command))
+   (Code := append Code (list (append (append '(if) (list (reduce (second Command) VS))) (list 'goto (env-label (fourth Command) VS) 'goto (env-label (sixth Command) VS)))))
+   (if (empty? BB) goto 6 goto 3))
+  (12 (if (equal? (car Command) 'return) goto 13 goto 14))
+  (13 (Code := append Code (list (append '(return) (reduce (cdr Command) VS)))) (if (empty? BB) goto 6 goto 3))
+  (14 (return error "MIX: error instruction"))
+  (15 (if (int-expr (hash->list VS) (second Command)) goto 17 goto 16))
+  (16
+   (BB
+    :=
+    hash-ref
+    '#hash((do-assign . ((if (is-static (first Command) static) goto do-static-assign goto do-dynamic-assign)))
+           (do-dynamic-assign . ((Code := append Code (list (append (list (first Command) ':=) (reduce (cddr Command) VS)))) (goto inner-loop)))
+           (do-dynamic-if
+            .
+            ((Pending := update-pending Pending VS Marked (fourth Command) (sixth Command))
+             (Code
+              :=
+              append
+              Code
+              (list (append (append (list 'if) (list (reduce (second Command) VS))) (list 'goto (env-label (fourth Command) VS) 'goto (env-label (sixth Command) VS)))))
+             (goto inner-loop)))
+           (do-fail . ((return error "MIX: error instruction")))
+           (do-goto . ((BB := hash-ref program (second Command) ()) (goto inner-loop)))
+           (do-if . ((if (is-static (second Command) static) goto do-static-if goto do-dynamic-if)))
+           (do-return . ((Code := append Code (list (append (list 'return) (reduce (cdr Command) VS)))) (goto inner-loop)))
+           (do-static-assign . ((VS := update-vs VS (first Command) (cddr Command)) (goto inner-loop)))
+           (do-static-if . ((if (int-expr (hash->list VS) (second Command)) goto do-static-if-true goto do-static-if-false)))
+           (do-static-if-false . ((BB := hash-ref program (sixth Command) ()) (goto inner-loop)))
+           (do-static-if-true . ((BB := hash-ref program (fourth Command) ()) (goto inner-loop)))
+           (init .
+                 ((Pending := list->set (list (cons (caadr program) (make-immutable-hash vs0))))
+                  (static := car div)
+                  (dynamic := cdr div)
+                  (Marked := list->set ())
+                  (Res := (list (cons 'read (set-subtract (cdar program) static))))
+                  (program := make-immutable-hash (cdr program))
+                  (goto loop)))
+           (inner-loop . ((if (empty? BB) goto loop-end goto inner-loop-body)))
+           (inner-loop-body . ((Command := car BB) (BB := cdr BB) (goto is-assign)))
+           (is-assign . ((if (equal? (second Command) ':=) goto do-assign goto is-goto)))
+           (is-goto . ((if (equal? (car Command) 'goto) goto do-goto goto is-if)))
+           (is-if . ((if (equal? (car Command) 'if) goto do-if goto is-return)))
+           (is-return . ((if (equal? (car Command) 'return) goto do-return goto do-fail)))
+           (loop . ((if (set-empty? Pending) goto stop goto loop-begin)))
+           (loop-begin
+            .
+            ((PPVS := set-first Pending)
+             (PP := car PPVS)
+             (VS := cdr PPVS)
+             (Pending := set-rest Pending)
+             (Marked := set-add Marked PPVS)
+             (BB := hash-ref program PP ())
+             (Code := list (env-label PP VS))
+             (goto inner-loop)))
+           (loop-end . ((Res := append Res (list Code)) (goto loop)))
+           (stop . ((return Res))))
+    (sixth Command)
+    ())
+   (if (empty? BB) goto 6 goto 3))
+  (17
+   (BB
+    :=
+    hash-ref
+    '#hash((do-assign . ((if (is-static (first Command) static) goto do-static-assign goto do-dynamic-assign)))
+           (do-dynamic-assign . ((Code := append Code (list (append (list (first Command) ':=) (reduce (cddr Command) VS)))) (goto inner-loop)))
+           (do-dynamic-if
+            .
+            ((Pending := update-pending Pending VS Marked (fourth Command) (sixth Command))
+             (Code
+              :=
+              append
+              Code
+              (list (append (append (list 'if) (list (reduce (second Command) VS))) (list 'goto (env-label (fourth Command) VS) 'goto (env-label (sixth Command) VS)))))
+             (goto inner-loop)))
+           (do-fail . ((return error "MIX: error instruction")))
+           (do-goto . ((BB := hash-ref program (second Command) ()) (goto inner-loop)))
+           (do-if . ((if (is-static (second Command) static) goto do-static-if goto do-dynamic-if)))
+           (do-return . ((Code := append Code (list (append (list 'return) (reduce (cdr Command) VS)))) (goto inner-loop)))
+           (do-static-assign . ((VS := update-vs VS (first Command) (cddr Command)) (goto inner-loop)))
+           (do-static-if . ((if (int-expr (hash->list VS) (second Command)) goto do-static-if-true goto do-static-if-false)))
+           (do-static-if-false . ((BB := hash-ref program (sixth Command) ()) (goto inner-loop)))
+           (do-static-if-true . ((BB := hash-ref program (fourth Command) ()) (goto inner-loop)))
+           (init .
+                 ((Pending := list->set (list (cons (caadr program) (make-immutable-hash vs0))))
+                  (static := car div)
+                  (dynamic := cdr div)
+                  (Marked := list->set ())
+                  (Res := (list (cons 'read (set-subtract (cdar program) static))))
+                  (program := make-immutable-hash (cdr program))
+                  (goto loop)))
+           (inner-loop . ((if (empty? BB) goto loop-end goto inner-loop-body)))
+           (inner-loop-body . ((Command := car BB) (BB := cdr BB) (goto is-assign)))
+           (is-assign . ((if (equal? (second Command) ':=) goto do-assign goto is-goto)))
+           (is-goto . ((if (equal? (car Command) 'goto) goto do-goto goto is-if)))
+           (is-if . ((if (equal? (car Command) 'if) goto do-if goto is-return)))
+           (is-return . ((if (equal? (car Command) 'return) goto do-return goto do-fail)))
+           (loop . ((if (set-empty? Pending) goto stop goto loop-begin)))
+           (loop-begin
+            .
+            ((PPVS := set-first Pending)
+             (PP := car PPVS)
+             (VS := cdr PPVS)
+             (Pending := set-rest Pending)
+             (Marked := set-add Marked PPVS)
+             (BB := hash-ref program PP ())
+             (Code := list (env-label PP VS))
+             (goto inner-loop)))
+           (loop-end . ((Res := append Res (list Code)) (goto loop)))
+           (stop . ((return Res))))
+    (fourth Command)
+    ())
+   (if (empty? BB) goto 6 goto 3))
+  (18 (Code := append Code (list (append (list (first Command) ':=) (reduce (cddr Command) VS)))) (if (empty? BB) goto 6 goto 3)))
+`comp`:
+'((read vs0)
+  (0 (Pending := list->set (list (cons 'init (make-immutable-hash vs0)))) (Marked := list->set ()) (Res := '((read Right))) (if (set-empty? Pending) goto 3 goto 1))
+  (1
+   (PPVS := set-first Pending)
+   (PP := car PPVS)
+   (VS := cdr PPVS)
+   (Pending := set-rest Pending)
+   (Marked := set-add Marked PPVS)
+   (BB
+    :=
+    hash-ref
+    '#hash((cont . ((Instruction := car Qtail) (Qtail := cdr Qtail) (Operator := car Instruction) (if (equal? Operator 'right) goto do-right goto cont1)))
+           (cont1 . ((if (equal? Operator 'left) goto do-left goto cont2)))
+           (cont2 . ((if (equal? Operator 'write) goto do-write goto cont3)))
+           (cont3 . ((if (equal? Operator 'goto) goto do-goto goto cont4)))
+           (cont4 . ((if (equal? Operator 'if) goto do-if goto error)))
+           (do-goto . ((NextLabel := cadr Instruction) (Qtail := list-tail Q NextLabel) (goto loop)))
+           (do-if . ((Symbol := cadr Instruction) (NextLabel := cadddr Instruction) (if (equal? Symbol (car Right)) goto jump goto loop)))
+           (do-left . ((Right := cons (car Left) Right) (Left := cdr Left) (goto loop)))
+           (do-right . ((Left := cons (car Right) Left) (Right := cdr Right) (goto loop)))
+           (do-write . ((Symbol := cadr Instruction) (Right := cons Symbol (cdr Right)) (goto loop)))
+           (error . ((return ('syntaxerror: Instruction))))
+           (init . ((Qtail := Q) (Left := '()) (goto loop)))
+           (jump . ((Qtail := list-tail Q NextLabel) (goto loop)))
+           (loop . ((if (null? Qtail) goto stop goto cont)))
+           (stop . ((return Right))))
+    PP
+    ())
+   (Code := list (env-label PP VS))
+   (if (empty? BB) goto 2 goto 4))
+  (2 (Res := append Res (list Code)) (if (set-empty? Pending) goto 3 goto 1))
+  (3 (return Res))
+  (4 (Command := car BB) (BB := cdr BB) (if (equal? (second Command) ':=) goto 7 goto 5))
+  (5 (if (equal? (car Command) 'goto) goto 6 goto 10))
+  (6
+   (BB
+    :=
+    hash-ref
+    '#hash((cont . ((Instruction := car Qtail) (Qtail := cdr Qtail) (Operator := car Instruction) (if (equal? Operator 'right) goto do-right goto cont1)))
+           (cont1 . ((if (equal? Operator 'left) goto do-left goto cont2)))
+           (cont2 . ((if (equal? Operator 'write) goto do-write goto cont3)))
+           (cont3 . ((if (equal? Operator 'goto) goto do-goto goto cont4)))
+           (cont4 . ((if (equal? Operator 'if) goto do-if goto error)))
+           (do-goto . ((NextLabel := cadr Instruction) (Qtail := list-tail Q NextLabel) (goto loop)))
+           (do-if . ((Symbol := cadr Instruction) (NextLabel := cadddr Instruction) (if (equal? Symbol (car Right)) goto jump goto loop)))
+           (do-left . ((Right := cons (car Left) Right) (Left := cdr Left) (goto loop)))
+           (do-right . ((Left := cons (car Right) Left) (Right := cdr Right) (goto loop)))
+           (do-write . ((Symbol := cadr Instruction) (Right := cons Symbol (cdr Right)) (goto loop)))
+           (error . ((return ('syntaxerror: Instruction))))
+           (init . ((Qtail := Q) (Left := '()) (goto loop)))
+           (jump . ((Qtail := list-tail Q NextLabel) (goto loop)))
+           (loop . ((if (null? Qtail) goto stop goto cont)))
+           (stop . ((return Right))))
+    (second Command)
+    ())
+   (if (empty? BB) goto 2 goto 4))
+  (7 (if (is-static (first Command) '(Q Qtail Instruction Operator Symbol NextLabel)) goto 9 goto 8))
+  (8 (Code := append Code (list (append (list (first Command) ':=) (reduce (cddr Command) VS)))) (if (empty? BB) goto 2 goto 4))
+  (9 (VS := update-vs VS (first Command) (cddr Command)) (if (empty? BB) goto 2 goto 4))
+  (10 (if (equal? (car Command) 'if) goto 11 goto 16))
+  (11 (if (is-static (second Command) '(Q Qtail Instruction Operator Symbol NextLabel)) goto 13 goto 12))
+  (12
+   (Pending := update-pending Pending VS Marked (fourth Command) (sixth Command))
+   (Code := append Code (list (append (append '(if) (list (reduce (second Command) VS))) (list 'goto (env-label (fourth Command) VS) 'goto (env-label (sixth Command) VS)))))
+   (if (empty? BB) goto 2 goto 4))
+  (13 (if (int-expr (hash->list VS) (second Command)) goto 14 goto 15))
+  (14
+   (BB
+    :=
+    hash-ref
+    '#hash((cont . ((Instruction := car Qtail) (Qtail := cdr Qtail) (Operator := car Instruction) (if (equal? Operator 'right) goto do-right goto cont1)))
+           (cont1 . ((if (equal? Operator 'left) goto do-left goto cont2)))
+           (cont2 . ((if (equal? Operator 'write) goto do-write goto cont3)))
+           (cont3 . ((if (equal? Operator 'goto) goto do-goto goto cont4)))
+           (cont4 . ((if (equal? Operator 'if) goto do-if goto error)))
+           (do-goto . ((NextLabel := cadr Instruction) (Qtail := list-tail Q NextLabel) (goto loop)))
+           (do-if . ((Symbol := cadr Instruction) (NextLabel := cadddr Instruction) (if (equal? Symbol (car Right)) goto jump goto loop)))
+           (do-left . ((Right := cons (car Left) Right) (Left := cdr Left) (goto loop)))
+           (do-right . ((Left := cons (car Right) Left) (Right := cdr Right) (goto loop)))
+           (do-write . ((Symbol := cadr Instruction) (Right := cons Symbol (cdr Right)) (goto loop)))
+           (error . ((return ('syntaxerror: Instruction))))
+           (init . ((Qtail := Q) (Left := '()) (goto loop)))
+           (jump . ((Qtail := list-tail Q NextLabel) (goto loop)))
+           (loop . ((if (null? Qtail) goto stop goto cont)))
+           (stop . ((return Right))))
+    (fourth Command)
+    ())
+   (if (empty? BB) goto 2 goto 4))
+  (15
+   (BB
+    :=
+    hash-ref
+    '#hash((cont . ((Instruction := car Qtail) (Qtail := cdr Qtail) (Operator := car Instruction) (if (equal? Operator 'right) goto do-right goto cont1)))
+           (cont1 . ((if (equal? Operator 'left) goto do-left goto cont2)))
+           (cont2 . ((if (equal? Operator 'write) goto do-write goto cont3)))
+           (cont3 . ((if (equal? Operator 'goto) goto do-goto goto cont4)))
+           (cont4 . ((if (equal? Operator 'if) goto do-if goto error)))
+           (do-goto . ((NextLabel := cadr Instruction) (Qtail := list-tail Q NextLabel) (goto loop)))
+           (do-if . ((Symbol := cadr Instruction) (NextLabel := cadddr Instruction) (if (equal? Symbol (car Right)) goto jump goto loop)))
+           (do-left . ((Right := cons (car Left) Right) (Left := cdr Left) (goto loop)))
+           (do-right . ((Left := cons (car Right) Left) (Right := cdr Right) (goto loop)))
+           (do-write . ((Symbol := cadr Instruction) (Right := cons Symbol (cdr Right)) (goto loop)))
+           (error . ((return ('syntaxerror: Instruction))))
+           (init . ((Qtail := Q) (Left := '()) (goto loop)))
+           (jump . ((Qtail := list-tail Q NextLabel) (goto loop)))
+           (loop . ((if (null? Qtail) goto stop goto cont)))
+           (stop . ((return Right))))
+    (sixth Command)
+    ())
+   (if (empty? BB) goto 2 goto 4))
+  (16 (if (equal? (car Command) 'return) goto 17 goto 18))
+  (17 (Code := append Code (list (append '(return) (reduce (cdr Command) VS)))) (if (empty? BB) goto 2 goto 4))
+  (18 (return error "MIX: error instruction")))
+`source`:
+'((if 0 goto 3) (right) (goto 0) (write 1))
+`target-3`:
+'((read Right)
+  (0 (Left := '()) (if (equal? '0 (car Right)) goto 1 goto 2))
+  (1 (Right := cons '1 (cdr Right)) (return Right))
+  (2 (Left := cons (car Right) Left) (Right := cdr Right) (if (equal? '0 (car Right)) goto 1 goto 2)))
+check `target-3`:
+#t
