@@ -21,9 +21,6 @@
     [`(,x) x]
     [_     l]))
 
-(define (init-env env blocks)
-  (foldr (lambda (a e) (dict-set e (car a) (cdr a))) env blocks))
-
 (define (env<-assign env key value)
   (dict-set env key (int-expr env (unqu value))))
 
@@ -53,8 +50,8 @@
 (define (int program data)
   (match program
     [`(,read . ,blocks) (let
-                            ([env (init-env #hash() (zip (cdr read) data))]
-                             [label-env (init-env #hash() blocks)]
+                            ([env (make-immutable-hash (zip (cdr read) data))]
+                             [label-env (make-immutable-hash blocks)]
                              [assign-jump (cdar blocks)])
                             (int-assigns-jump env label-env assign-jump))]
     [else               (error "int: empty program")]))
@@ -64,7 +61,7 @@
 (define (int-assigns-jump env label-env assigns-jump)
   (match assigns-jump
     [`((,x . (:= . ,y)) . ,a-j) (int-assigns-jump (env<-assign env x y) label-env a-j)]
-    [`,jump                     (int-jump env label-env (if (list? (car jump)) (car jump) jump))]
+    [`(,jump . ,_)               (int-jump env label-env jump)]
     [else                       (error "int-assigns-jump: error assign or lose jump")]))
 
 ;(trace int-assigns-jump)
@@ -131,19 +128,19 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;------------------------------------------ execute --------------------------------------------;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;
-;(displayln "INT-CHECK")
-;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;
-;(displayln "`find-name`:")
-;(equal? (int find-name '(y (x y z) (1 2 3))) 2)
-;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;
-;(displayln "`tm-example`:")
-;(equal? (int tm-int `(,tm-example ,'(1 1 0 1 0 1))) '(1 1 0 1))
-;
+
+(displayln "INT-CHECK")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(displayln "`find-name`:")
+(equal? (int find-name '(y (x y z) (1 2 3))) 2)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(displayln "`tm-example`:")
+(equal? (int tm-int `(,tm-example ,'(1 1 0 1 0 1))) '(1 1 0 1))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -299,14 +296,14 @@
 ;------------------------------------------ execute --------------------------------------------;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(displayln "MIX-CHECK")
-
-(define mix-div
-  (cons '(program div static dynamic) '(Pending Marked Res PPVS PP VS vs0 BB Code Command)))
-
-(define (mix-vs source-int source-div)
-  `(,(cons 'program source-int) ,(cons 'div source-div)))
-
+;(displayln "MIX-CHECK")
+;
+;(define mix-div
+;  (cons '(program div static dynamic) '(Pending Marked Res PPVS PP VS vs0 BB Code Command)))
+;
+;(define (mix-vs source-int source-div)
+;  `(,(cons 'program source-int) ,(cons 'div source-div)))
+;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
 ;(displayln "`find-name`:")
@@ -345,7 +342,7 @@
 ;    (int mix `(,mix ,mix-div ,(mix-vs tm-int tm-div)))))
 ;
 ;(displayln "`proj2/comp`:")
-;;proj2
+;proj2
 ;
 ;(displayln "`source`:")
 ;tm-example
@@ -359,36 +356,36 @@
 ;(displayln "check `target-2`:")
 ;(equal? (int target-2 `(,'(1 1 0 1 0 1))) '(1 1 0 1))
 ;
-;task6-1;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(displayln "`III proj`:")
-
-(define proj3
-  (pretty
-    (int mix `(,mix ,mix-div ,(mix-vs mix mix-div)))))
-
-(displayln "`proj3/cogen`:")
-proj3
-
-(define comp
-  (pretty
-    (int proj3 `(,(mix-vs tm-int tm-div)))))
-
-(displayln "`comp`:")
-comp
-
-(displayln "`source`:")
-tm-example
-
-(define target-3
-  (pretty
-    (int comp `(,(tm-vs tm-example)))))
-
-(displayln "`target-3`:")
-target-3
-
-(displayln "check `target-3`:")
-(equal? (int target-3 `(,'(1 1 0 1 0 1))) '(1 1 0 1))
+;;task6-1;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+;(displayln "`III proj`:")
+;
+;(define proj3
+;  (pretty
+;    (int mix `(,mix ,mix-div ,(mix-vs mix mix-div)))))
+;
+;(displayln "`proj3/cogen`:")
+;proj3
+;
+;(define comp
+;  (pretty
+;    (int proj3 `(,(mix-vs tm-int tm-div)))))
+;
+;(displayln "`comp`:")
+;comp
+;
+;(displayln "`source`:")
+;tm-example
+;
+;(define target-3
+;  (pretty
+;    (int comp `(,(tm-vs tm-example)))))
+;
+;(displayln "`target-3`:")
+;target-3
+;
+;(displayln "check `target-3`:")
+;(equal? (int target-3 `(,'(1 1 0 1 0 1))) '(1 1 0 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -518,17 +515,17 @@ target-3
 ;------------------------------------------ execute --------------------------------------------;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(displayln "TRICK-MIX-CHECK")
-
-(define trick-mix-div
-  (cons '(program div static dynamic dynamic-labels dynamic-labels-tmp BB Command pp-tmp)
-        '(Pending Marked Res PPVS PP VS vs0 BB Code)))
-
-(define (trick-mix-vs source-int source-div)
-  `(,(cons 'program source-int) ,(cons 'div source-div)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;(displayln "TRICK-MIX-CHECK")
+;
+;(define trick-mix-div
+;  (cons '(program div static dynamic dynamic-labels dynamic-labels-tmp BB Command pp-tmp)
+;        '(Pending Marked Res PPVS PP VS vs0 BB Code)))
+;
+;(define (trick-mix-vs source-int source-div)
+;  `(,(cons 'program source-int) ,(cons 'div source-div)))
+;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
 ;(displayln "`find-name`:")
 ;
 ;(define trick-find-name-apply-2-args
@@ -619,26 +616,133 @@ target-3
 
 ;task5-1;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define fc-int
+  '((read Program Env)
+    (int (Env := make-immutable-hash (zip (cdar Program) Env))
+         (AssignJump := cdadr Program)
+         (Program := make-immutable-hash (cdr Program))
+         (goto is-not-empty))
+    
+    (is-not-empty (if (null? AssignJump) goto error goto cont))
+    (cont (Action := car AssignJump)
+          (goto is-assign))
+    
+    (is-assign (if (equal? (second Action) ':=)     goto do-assign goto is-goto))
+    (is-goto   (if (equal? (first Action)  'goto)   goto do-goto   goto is-if))
+    (is-if     (if (equal? (first Action)  'if)     goto do-if     goto is-return))
+    (is-return (if (equal? (first Action)  'return) goto do-return goto error))
 
-(displayln "HERE!")
+    (do-assign (Env := dict-set Env (car Action) (int-expr Env (unqu (cddr Action))))
+               (AssignJump := cdr AssignJump)
+               (goto is-not-empty))
+    
+    (do-goto (AssignJump := dict-ref Program (second Action))
+             (goto is-not-empty))
+    
+    (do-if (if (int-expr Env (second Action)) goto if-true goto if-false))
+    (if-true (AssignJump := dict-ref Program (fourth Action))
+             (goto is-not-empty))
+    (if-false (AssignJump := dict-ref Program (sixth Action))
+              (goto is-not-empty))
+    
+    (do-return (return (int-expr Env (unqu (cdr Action)))))
+
+    (error (return ('syntaxerror)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;------------------------------------------ execute --------------------------------------------;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;(displayln "FC-INT-CHECK")
-
-;task5-2;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;
+;(displayln "check `find-name`:")
+;(equal? (int fc-int (list find-name '(y (x y z) (1 2 3)))) 2)
+;
+;(define fc-div
+;  (cons '(Program AssignJump Action) '(Env)))
+;  
+;
+;(define (fc-vs source)
+;    (list (cons 'Program source)))
+;
+;(define fc-mix-div
+;  (cons '(program div static dynamic) '(Pending Marked Res PPVS PP VS vs0 BB Code Command)))
+;
+;(define (fc-mix-vs source-int source-div)
+;  `(,(cons 'program source-int) ,(cons 'div source-div)))
+;
+;;task5-2;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
 ;(displayln "`FC I proj`:")
-
-;task5-3;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;
+;(define (fc-proj1 source)
+;  (pretty
+;    (int mix `(,fc-int ,fc-div ,(fc-vs source)))))
+;
+;(displayln "`fc-source`:")
+;find-name
+;
+;(displayln "`fc-target-1`:")
+;(define fc-target-1
+;  (fc-proj1 find-name))
+;fc-target-1
+;
+;(displayln "check `fc-target-1`:")
+;(equal? (int fc-target-1 `(,'(y (x y z) (1 2 3)))) 2)
+;
+;;task5-3;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
 ;(displayln "`FC II proj`:")
-
-;task6-3;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;
+;(define fc-proj2
+;  (pretty
+;    (int mix `(,mix ,fc-mix-div ,(fc-mix-vs fc-int fc-div)))))
+;
+;(displayln "`fc-proj2/comp`:")
+;fc-proj2
+;
+;(displayln "`source`:")
+;tm-example
+;
+;(displayln "`fc-target-2`:")
+;(define fc-target-2
+;  (pretty
+;     (int fc-proj2 `(,(fc-vs find-name)))))
+;fc-target-2
+;
+;(displayln "check `fc-target-2`:")
+;(equal? (int fc-target-2 `(,'(y (x y z) (1 2 3)))) 2)
+;
+;;task6-3;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
 ;(displayln "`FC III proj`:")
+;
+;(define fc-proj3
+;  (pretty
+;    (int mix `(,mix ,fc-mix-div ,(fc-mix-vs mix fc-mix-div)))))
+;
+;(displayln "`fc-proj3/cogen`:")
+;fc-proj3
+;
+;(define fc-comp
+;  (pretty
+;    (int fc-proj3 `(,(fc-mix-vs fc-int fc-div)))))
+;
+;(displayln "`fc-comp`:")
+;fc-comp
+;
+;(displayln "`source`:")
+;tm-example
+;
+;(define fc-target-3
+;  (pretty
+;    (int fc-comp `(,(fc-vs find-name)))))
+;
+;(displayln "`fc-target-3`:")
+;fc-target-3
+;
+;(displayln "check `fc-target-3`:")
+;(equal? (int fc-target-3 `(,'(y (x y z) (1 2 3)))) 2)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
