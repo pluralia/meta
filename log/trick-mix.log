@@ -927,4 +927,3 @@ check `trick-target-2`:
   (2 (Left := cons (car Right) Left) (Right := cdr Right) (if (equal? '0 (car Right)) goto 1 goto 2)))
 check `trick-target-3`:
 #t
-HERE!
